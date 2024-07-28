@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const quotes = [
+  let quotes = JSON.parse(localStorage.getItem('quotes')) || [
     { text: "The only limit to our realization of tomorrow is our doubts of today.", category: "Motivation" },
     { text: "Life is what happens when you're busy making other plans.", category: "Life" },
-    // Add more quotes as needed
+    // Add more default quotes as needed
   ];
 
   const quoteDisplay = document.getElementById('quoteDisplay');
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
     const randomQuote = quotes[randomIndex];
     quoteDisplay.innerHTML = `<p>${randomQuote.text}</p><p><em>${randomQuote.category}</em></p>`;
+    sessionStorage.setItem('lastQuote', JSON.stringify(randomQuote));
   }
 
   function addQuote() {
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (text && category) {
       quotes.push({ text, category });
+      localStorage.setItem('quotes', JSON.stringify(quotes));
       newQuoteText.value = '';
       newQuoteCategory.value = '';
       alert('Quote added successfully!');
@@ -37,8 +39,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function loadLastQuote() {
+    const lastQuote = JSON.parse(sessionStorage.getItem('lastQuote'));
+    if (lastQuote) {
+      quoteDisplay.innerHTML = `<p>${lastQuote.text}</p><p><em>${lastQuote.category}</em></p>`;
+    }
+  }
+
   newQuoteButton.addEventListener('click', showRandomQuote);
   addQuoteButton.addEventListener('click', addQuote);
-});
 
-  
+  loadLastQuote();
+});
