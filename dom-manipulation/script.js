@@ -45,8 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const category = newQuoteCategory.value.trim();
 
     if (text && category) {
-      quotes.push({ text, category });
+      const newQuote = { text, category };
+      quotes.push(newQuote);
       localStorage.setItem('quotes', JSON.stringify(quotes));
+      postQuoteToServer(newQuote); // Post the new quote to the server
       newQuoteText.value = '';
       newQuoteCategory.value = '';
       alert('Quote added successfully!');
@@ -70,18 +72,40 @@ document.addEventListener('DOMContentLoaded', () => {
     filterQuotes();
   }
 
-  function syncWithServer() {
+  function fetchQuotesFromServer() {
     fetch('https://jsonplaceholder.typicode.com/posts')
       .then(response => response.json())
       .then(serverQuotes => {
         const serverQuotesFormatted = serverQuotes.map(quote => ({ text: quote.title, category: "General" }));
-        // Simple conflict resolution: server data takes precedence
-        quotes = serverQuotesFormatted;
-        localStorage.setItem('quotes', JSON.stringify(quotes));
+        resolveConflicts(serverQuotesFormatted);
         populateCategories();
         filterQuotes();
-        alert('Quotes synced with server!');
-      });
+      })
+      .catch(error => console.error('Error fetching quotes from server:', error));
+  }
+
+  function postQuoteToServer(quote) {
+    fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(quote)
+    })
+    .then(response => response.json())
+    .then(data => console.log('Quote posted to server:', data))
+    .catch(error => console.error('Error posting quote to server:', error));
+  }
+
+  function syncQuotes() {
+    fetchQuotesFromServer();
+    setTimeout(syncQuotes, 60000); // Sync every 60 seconds
+  }
+
+  function resolveConflicts(serverQuotes) {
+    // Simple conflict resolution: server data takes precedence
+    const serverTexts = new Set(serverQuotes.map(quote => quote.text));
+    quotes = quotes.filter(quote => !serverTexts.has(quote.text)).concat(serverQuotes);
+    localStorage.setItem('quotes', JSON.stringify(quotes));
+    alert('Quotes synced with server! Conflicts resolved by prioritizing server data.');
   }
 
   function importFromJsonFile(event) {
@@ -118,6 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadLastSelectedCategory();
   loadLastQuote();
 
-  // Sync with server every 60 seconds
-  setInterval(syncWithServer, 60000);
+  // Start syncing quotes with the server
+  syncQuotes();
 });
