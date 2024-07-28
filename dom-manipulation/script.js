@@ -70,6 +70,33 @@ document.addEventListener('DOMContentLoaded', () => {
     filterQuotes();
   }
 
+  function syncWithServer() {
+    fetch('https://jsonplaceholder.typicode.com/posts')
+      .then(response => response.json())
+      .then(serverQuotes => {
+        const serverQuotesFormatted = serverQuotes.map(quote => ({ text: quote.title, category: "General" }));
+        // Simple conflict resolution: server data takes precedence
+        quotes = serverQuotesFormatted;
+        localStorage.setItem('quotes', JSON.stringify(quotes));
+        populateCategories();
+        filterQuotes();
+        alert('Quotes synced with server!');
+      });
+  }
+
+  function importFromJsonFile(event) {
+    const fileReader = new FileReader();
+    fileReader.onload = function(event) {
+      const importedQuotes = JSON.parse(event.target.result);
+      quotes.push(...importedQuotes);
+      localStorage.setItem('quotes', JSON.stringify(quotes));
+      alert('Quotes imported successfully!');
+      populateCategories();
+      filterQuotes();
+    };
+    fileReader.readAsText(event.target.files[0]);
+  }
+
   newQuoteButton.addEventListener('click', showRandomQuote);
   addQuoteButton.addEventListener('click', addQuote);
   document.getElementById('exportQuotes').addEventListener('click', () => {
@@ -87,20 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('importFile').addEventListener('change', importFromJsonFile);
 
-  function importFromJsonFile(event) {
-    const fileReader = new FileReader();
-    fileReader.onload = function(event) {
-      const importedQuotes = JSON.parse(event.target.result);
-      quotes.push(...importedQuotes);
-      localStorage.setItem('quotes', JSON.stringify(quotes));
-      alert('Quotes imported successfully!');
-      populateCategories();
-      filterQuotes();
-    };
-    fileReader.readAsText(event.target.files[0]);
-  }
-
   populateCategories();
   loadLastSelectedCategory();
   loadLastQuote();
+
+  // Sync with server every 60 seconds
+  setInterval(syncWithServer, 60000);
 });
